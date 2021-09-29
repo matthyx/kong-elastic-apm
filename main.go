@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/go-pdk/server"
 	"github.com/google/uuid"
 	"go.elastic.co/apm"
+	"go.elastic.co/apm/module/apmhttp"
 	"go.elastic.co/apm/transport"
 	"log"
 	"net/http"
@@ -26,36 +27,36 @@ var Priority = 1
 var False = "false"
 
 type Config struct {
-	ApmActive                 bool   `json:apm_active`
-	ApmApiKey                 string `json:apm_api_key`
-	ApmApiRequestSize         string `json:apm_api_request_size`
-	ApmApiRequestTime         string `json:apm_api_request_time`
-	ApmBreakDownMetrics       bool   `json:apm_api_breakdown_metrics`
-	ApmCaptureBody            string `json:apm_api_capture_body`
-	ApmCaptureHeaders         bool   `json:apm_api_capture_headers`
-	ApmCentralConfig          bool   `json:apm_api_central_config`
-	ApmCloudProvider          string `json:apm_api_cloud_provider`
-	ApmDisableMetrics         string `json:apm_disable_metrics`
-	ApmEnvironment            string `json:apm_environment`
-	ApmGlobalLabels           string `json:apm_global_labels`
-	ApmLogFile                string `json:apm_log_file`
-	ApmLogLevel               string `json:apm_log_level`
-	ApmMetricsInterval        string `json:apm_metrics_interval`
-	ApmRecording              bool   `json:apm_recording`
-	ApmSanitizeFieldsNames    string `json:apm_sanitize_fields_names`
-	ApmSecretToken            string `json:apm_secret_token`
-	ApmServerTimeout          string `json:apm_server_timeout`
-	ApmServerUrl              string `json:apm_server_url`
-	ApmServerCert             string `json:apm_server_cert`
-	ApmServerVerifyServerCert bool   `json:apm_server_verify_server_cert`
-	ApmServiceName            string `json:apm_service_name`
-	ApmServiceVersion         string `json:apm_service_version`
-	ApmServiceNodeName        string `json:apm_service_node_name`
-	ApmTransactionIgnoreUrls  string `json:apm_transaction_ignore_urls`
-	ApmTransactionMaxSpans    int    `json:apm_transaction_max_spans`
-	ApmTransactionSampleRate  string `json:apm_transaction_sample_rate`
-	ApmSpanFramesMinDuration  string `json:apm_span_frames_min_duration`
-	ApmStackTraceLimit        int    `json:apm_span_stack_trace_limit`
+	ApmActive                 bool
+	ApmApiKey                 string
+	ApmApiRequestSize         string
+	ApmApiRequestTime         string
+	ApmBreakDownMetrics       bool
+	ApmCaptureBody            string
+	ApmCaptureHeaders         bool
+	ApmCentralConfig          bool
+	ApmCloudProvider          string
+	ApmDisableMetrics         string
+	ApmEnvironment            string
+	ApmGlobalLabels           string
+	ApmLogFile                string
+	ApmLogLevel               string
+	ApmMetricsInterval        string
+	ApmRecording              bool
+	ApmSanitizeFieldsNames    string
+	ApmSecretToken            string
+	ApmServerTimeout          string
+	ApmServerUrl              string
+	ApmServerCert             string
+	ApmServerVerifyServerCert bool
+	ApmServiceName            string
+	ApmServiceVersion         string
+	ApmServiceNodeName        string
+	ApmTransactionIgnoreUrls  string
+	ApmTransactionMaxSpans    int
+	ApmTransactionSampleRate  string
+	ApmSpanFramesMinDuration  string
+	ApmStackTraceLimit        int
 }
 
 func New() interface{} {
@@ -112,7 +113,6 @@ func initTracer(conf Config, logger klog.Log) {
 		setEnv("ELASTIC_APM_CENTRAL_CONFIG", "false", logger)
 	}
 	setEnv("ELASTIC_APM_CLOUD_PROVIDER", conf.ApmCloudProvider, logger)
-
 }
 
 func setEnv(env string, value string, logger klog.Log) {
@@ -164,15 +164,27 @@ func (conf Config) Access(kong *pdk.PDK) {
 	if tracer == nil {
 		initTracer(conf, kong.Log)
 	}
+	// check if there is an existing trace
+	requestHeaders := askMap(kong.Request.PdkBridge, "kong.request.get_headers", kong.Log)
+	opts := apm.TransactionOptions{}
+	if traceParentHeader, ok := requestHeaders[apmhttp.W3CTraceparentHeader]; ok && len(traceParentHeader) > 0 {
+		kong.Log.Info("found trace parent: ", traceParentHeader[0])
+		traceContext, _ := apmhttp.ParseTraceparentHeader(traceParentHeader[0])
+		if traceStateHeader, ok := requestHeaders[apmhttp.TracestateHeader]; ok && len(traceStateHeader) > 0 {
+			kong.Log.Info("found trace state: ", traceStateHeader)
+			traceContext.State, _ = apmhttp.ParseTracestateHeader(traceStateHeader...)
+		}
+		opts.TraceContext = traceContext
+	}
 	// create and record transaction
 	txID := uuid.New().String()
 	method := askString(kong.Request.PdkBridge, "kong.request.get_method", kong.Log)
-	transactions[txID] = tracer.StartTransaction(fmt.Sprintf("%s %s:%d%s",
+	transactions[txID] = tracer.StartTransactionOptions(fmt.Sprintf("%s %s:%d%s",
 		method,
 		askString(kong.Request.PdkBridge, "kong.request.get_forwarded_host", kong.Log),
 		askInt(kong.Request.PdkBridge, "kong.request.get_forwarded_port", kong.Log),
 		askString(kong.Request.PdkBridge, "kong.request.get_forwarded_path", kong.Log),
-	), "request")
+	), "request", opts)
 	kong.Log.Info("Started transaction: ", txID)
 	err := kong.Ctx.SetShared(transactionID, txID)
 	if err != nil {
@@ -201,6 +213,11 @@ func (conf Config) Access(kong *pdk.PDK) {
 	spans[txID].Action = method
 	spans[txID].Context.SetDestinationAddress(svc.Host, svc.Port)
 	spans[txID].Subtype = svc.Protocol
+	// add traceparent header to outgoing request
+	err = kong.ServiceRequest.AddHeader(apmhttp.W3CTraceparentHeader, apmhttp.FormatTraceparentHeader(spans[txID].TraceContext()))
+	if err != nil {
+		kong.Log.Err("Error setting traceparent header to service request: ", err.Error())
+	}
 }
 
 func (conf Config) Response(kong *pdk.PDK) {
