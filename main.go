@@ -167,10 +167,10 @@ func (conf Config) Access(kong *pdk.PDK) {
 	// check if there is an existing trace
 	requestHeaders := askMap(kong.Request.PdkBridge, "kong.request.get_headers", kong.Log)
 	opts := apm.TransactionOptions{}
-	if traceParentHeader, ok := requestHeaders[apmhttp.W3CTraceparentHeader]; ok && len(traceParentHeader) > 0 {
+	if traceParentHeader, ok := requestHeaders[strings.ToLower(apmhttp.W3CTraceparentHeader)]; ok && len(traceParentHeader) > 0 {
 		kong.Log.Info("found trace parent: ", traceParentHeader[0])
 		traceContext, _ := apmhttp.ParseTraceparentHeader(traceParentHeader[0])
-		if traceStateHeader, ok := requestHeaders[apmhttp.TracestateHeader]; ok && len(traceStateHeader) > 0 {
+		if traceStateHeader, ok := requestHeaders[strings.ToLower(apmhttp.TracestateHeader)]; ok && len(traceStateHeader) > 0 {
 			kong.Log.Info("found trace state: ", traceStateHeader)
 			traceContext.State, _ = apmhttp.ParseTracestateHeader(traceStateHeader...)
 		}
