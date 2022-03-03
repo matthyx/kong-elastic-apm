@@ -12,4 +12,6 @@ RUN CGO_ENABLED=0 go build -o /kong-elastic-apm
 
 FROM kong
 
+USER root
 COPY --from=build /kong-elastic-apm /usr/local/bin/
+USER kong
