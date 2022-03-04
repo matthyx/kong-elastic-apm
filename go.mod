@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/ugorji/go v1.2.6 // indirect
 	go.elastic.co/apm v1.15.0
-	go.elastic.co/apm/module/apmhttp v1.14.0
+	go.elastic.co/apm/module/apmhttp v1.15.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/sys v0.0.0-20210923061019-b8560ed6a9b7 // indirect
