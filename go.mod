@@ -3,12 +3,11 @@ module github.com/Kong/go-plugins
 go 1.13
 
 require (
-	github.com/Kong/go-pdk v0.6.1
+	github.com/Kong/go-pdk v0.7.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/go-sysinfo v1.7.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.3.0
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
