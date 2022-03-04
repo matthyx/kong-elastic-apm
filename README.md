@@ -50,10 +50,7 @@ docker-compose up
 
 Test the service:
 ```shell
-curl http://localhost:8000/hello
+curl -v http://localhost:8000/hello
 ```
 
-You can see plugin activation messages in logs:
-```
-kong_1  | 2022/03/03 14:37:52 [notice] 1110#0: *8 [kong] process.lua:256 Starting kong-elastic-apm, context: ngx.timer
-```
+You can now check APM metrics in Kibana: http://localhost:5601/app/apm

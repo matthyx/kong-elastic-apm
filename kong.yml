@@ -3,15 +3,16 @@ _transform: true
 
 services:
   - name: hello
-    url: http://localhost
+    url: https://httpbin.org/anything
     routes:
       - name: hello
         paths:
           - /hello
 
 plugins:
-  - name: request-termination
+  - name: elastic-apm
+    enabled: true
     service: hello
     config:
-      status_code: 200
-      message: "hello world"
+      apm_active: true
+      apm_server_url: http://apm-server:8200
