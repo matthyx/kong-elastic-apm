@@ -8,14 +8,13 @@ require (
 	github.com/elastic/go-sysinfo v1.7.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.3.0
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/ugorji/go v1.2.6 // indirect
-	go.elastic.co/apm v1.14.0
+	go.elastic.co/apm v1.15.0
 	go.elastic.co/apm/module/apmhttp v1.14.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.5.1 // indirect
