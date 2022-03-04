@@ -1,0 +1,17 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: hello
+    url: http://localhost
+    routes:
+      - name: hello
+        paths:
+          - /hello
+
+plugins:
+  - name: request-termination
+    service: hello
+    config:
+      status_code: 200
+      message: "hello world"

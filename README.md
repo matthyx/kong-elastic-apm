@@ -38,30 +38,22 @@ This plugin is not intended for production use.
 
 ## Trying the plugin
 
-Build the image with Docker:
+Build the image:
 ```shell
-docker build -t kong-apm .
+docker-compose build
 ```
 
-Run the image with plugin enabled:
+Run the image:
 ```shell
-docker run --rm --name kong \
-    -e "KONG_DATABASE=off" \
-    -e "KONG_PLUGINSERVER_NAMES=kong-elastic-apm" \
-    -e "KONG_PLUGINSERVER_KONG_ELASTIC_APM_QUERY_CMD=/usr/local/bin/kong-elastic-apm -dump" \
-    -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
-    -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
-    -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
-    -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
-    -e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
-    -p 8000:8000 \
-    -p 8443:8443 \
-    -p 8001:8001 \
-    -p 8444:8444 \
-    kong-apm
+docker-compose up
+```
+
+Test the service:
+```shell
+curl http://localhost:8000/hello
 ```
 
 You can see plugin activation messages in logs:
 ```
-2022/03/03 14:37:52 [notice] 1110#0: *8 [kong] process.lua:256 Starting kong-elastic-apm, context: ngx.timer
+kong_1  | 2022/03/03 14:37:52 [notice] 1110#0: *8 [kong] process.lua:256 Starting kong-elastic-apm, context: ngx.timer
 ```
