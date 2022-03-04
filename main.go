@@ -1,62 +1,65 @@
 package main
 
 import (
+	cryptorand "crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/Kong/go-pdk"
-	"github.com/Kong/go-pdk/bridge"
 	klog "github.com/Kong/go-pdk/log"
 	"github.com/Kong/go-pdk/server"
-	"github.com/google/uuid"
 	"go.elastic.co/apm"
 	"go.elastic.co/apm/module/apmhttp"
 	"go.elastic.co/apm/transport"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
-	"strings"
+	"time"
 )
 
-const transactionID = "transactionID"
+const (
+	traceParent    = "traceparent"
+	oldTraceParent = "x-external-traceparent"
+)
 
-var spans = make(map[string]*apm.Span)
-var transactions = make(map[string]*apm.Transaction)
 var tracer *apm.Tracer
 var Version = "1.13.1"
 var Priority = 1
 var False = "false"
 
 type Config struct {
-	ApmActive                 bool
-	ApmApiKey                 string
-	ApmApiRequestSize         string
-	ApmApiRequestTime         string
-	ApmBreakDownMetrics       bool
-	ApmCaptureBody            string
-	ApmCaptureHeaders         bool
-	ApmCentralConfig          bool
-	ApmCloudProvider          string
-	ApmDisableMetrics         string
-	ApmEnvironment            string
-	ApmGlobalLabels           string
-	ApmLogFile                string
-	ApmLogLevel               string
-	ApmMetricsInterval        string
-	ApmRecording              bool
-	ApmSanitizeFieldsNames    string
-	ApmSecretToken            string
-	ApmServerTimeout          string
-	ApmServerUrl              string
-	ApmServerCert             string
-	ApmServerVerifyServerCert bool
-	ApmServiceName            string
-	ApmServiceVersion         string
-	ApmServiceNodeName        string
-	ApmTransactionIgnoreUrls  string
-	ApmTransactionMaxSpans    int
-	ApmTransactionSampleRate  string
-	ApmSpanFramesMinDuration  string
-	ApmStackTraceLimit        int
+	ApmActive                 bool   `json:"apm_active"`
+	ApmApiKey                 string `json:"apm_api_key"`
+	ApmApiRequestSize         string `json:"apm_api_request_size"`
+	ApmApiRequestTime         string `json:"apm_api_request_time"`
+	ApmBreakDownMetrics       bool   `json:"apm_api_breakdown_metrics"`
+	ApmCaptureBody            string `json:"apm_api_capture_body"`
+	ApmCaptureHeaders         bool   `json:"apm_api_capture_headers"`
+	ApmCentralConfig          bool   `json:"apm_api_central_config"`
+	ApmCloudProvider          string `json:"apm_api_cloud_provider"`
+	ApmDisableMetrics         string `json:"apm_disable_metrics"`
+	ApmEnvironment            string `json:"apm_environment"`
+	ApmGlobalLabels           string `json:"apm_global_labels"`
+	ApmLogFile                string `json:"apm_log_file"`
+	ApmLogLevel               string `json:"apm_log_level"`
+	ApmMetricsInterval        string `json:"apm_metrics_interval"`
+	ApmRecording              bool   `json:"apm_recording"`
+	ApmSanitizeFieldsNames    string `json:"apm_sanitize_fields_names"`
+	ApmSecretToken            string `json:"apm_secret_token"`
+	ApmServerTimeout          string `json:"apm_server_timeout"`
+	ApmServerUrl              string `json:"apm_server_url"`
+	ApmServerCert             string `json:"apm_server_cert"`
+	ApmServerVerifyServerCert bool   `json:"apm_server_verify_server_cert"`
+	ApmServiceName            string `json:"apm_service_name"`
+	ApmServiceVersion         string `json:"apm_service_version"`
+	ApmServiceNodeName        string `json:"apm_service_node_name"`
+	ApmTransactionIgnoreUrls  string `json:"apm_transaction_ignore_urls"`
+	ApmTransactionMaxSpans    int    `json:"apm_transaction_max_spans"`
+	ApmTransactionSampleRate  string `json:"apm_transaction_sample_rate"`
+	ApmSpanFramesMinDuration  string `json:"apm_span_frames_min_duration"`
+	ApmStackTraceLimit        int    `json:"apm_span_stack_trace_limit"`
 }
 
 func New() interface{} {
@@ -64,7 +67,7 @@ func New() interface{} {
 }
 
 func initTracer(conf Config, logger klog.Log) {
-	if conf.ApmActive == false {
+	if !conf.ApmActive {
 		setEnv("ELASTIC_APM_ACTIVE", False, logger)
 		logger.Info("APM agent is not activated")
 		return
@@ -126,166 +129,232 @@ func setEnv(env string, value string, logger klog.Log) {
 	}
 }
 
-func askMap(b bridge.PdkBridge, method string, logger klog.Log) map[string][]string {
-	m, err := b.AskMap(method)
-	if err != nil {
-		logger.Err("Cannot read map ", method, ": ", err.Error())
-		return nil
-	}
-	logger.Debug(method, " ", m)
-	return m
+type LogMsg struct {
+	Latencies struct {
+		Request int `json:"request"`
+		Kong    int `json:"kong"`
+		Proxy   int `json:"proxy"`
+	} `json:"latencies"`
+	Service struct {
+		Host           string `json:"host"`
+		CreatedAt      int    `json:"created_at"`
+		ConnectTimeout int    `json:"connect_timeout"`
+		ID             string `json:"id"`
+		Protocol       string `json:"protocol"`
+		ReadTimeout    int    `json:"read_timeout"`
+		Port           int    `json:"port"`
+		Path           string `json:"path"`
+		UpdatedAt      int    `json:"updated_at"`
+		WriteTimeout   int    `json:"write_timeout"`
+		Retries        int    `json:"retries"`
+		WsID           string `json:"ws_id"`
+	} `json:"service"`
+	Request struct {
+		Querystring struct {
+		} `json:"querystring"`
+		Size    int               `json:"size"`
+		URI     string            `json:"uri"`
+		URL     string            `json:"url"`
+		Headers map[string]string `json:"headers"`
+		Method  string            `json:"method"`
+	} `json:"request"`
+	Tries []struct {
+		BalancerLatency int    `json:"balancer_latency"`
+		Port            int    `json:"port"`
+		BalancerStart   int64  `json:"balancer_start"`
+		IP              string `json:"ip"`
+	} `json:"tries"`
+	ClientIP    string `json:"client_ip"`
+	Workspace   string `json:"workspace"`
+	UpstreamURI string `json:"upstream_uri"`
+	Response    struct {
+		Headers map[string]string `json:"headers"`
+		Status  int               `json:"status"`
+		Size    int               `json:"size"`
+	} `json:"response"`
+	Route struct {
+		ID                      string   `json:"id"`
+		Paths                   []string `json:"paths"`
+		Protocols               []string `json:"protocols"`
+		StripPath               bool     `json:"strip_path"`
+		CreatedAt               int      `json:"created_at"`
+		WsID                    string   `json:"ws_id"`
+		RequestBuffering        bool     `json:"request_buffering"`
+		UpdatedAt               int      `json:"updated_at"`
+		PreserveHost            bool     `json:"preserve_host"`
+		RegexPriority           int      `json:"regex_priority"`
+		ResponseBuffering       bool     `json:"response_buffering"`
+		HTTPSRedirectStatusCode int      `json:"https_redirect_status_code"`
+		PathHandling            string   `json:"path_handling"`
+		Service                 struct {
+			ID string `json:"id"`
+		} `json:"service"`
+	} `json:"route"`
+	StartedAt int64 `json:"started_at"`
 }
 
-func askInt(b bridge.PdkBridge, method string, logger klog.Log) int {
-	i, err := b.AskInt(method)
-	if err != nil {
-		logger.Err("Cannot read int ", method, ": ", err.Error())
-		return 0
+func translateHeaders(in map[string]string) map[string][]string {
+	out := make(map[string][]string)
+	for k, v := range in {
+		out[k] = []string{v}
 	}
-	logger.Debug(method, " ", i)
-	return i
-}
-
-func askString(b bridge.PdkBridge, method string, logger klog.Log) string {
-	s, err := b.AskString(method)
-	if err != nil {
-		logger.Err("Cannot read string ", method, ": ", err.Error())
-		return ""
-	}
-	logger.Debug(method, " ", s)
-	return s
+	return out
 }
 
 func (conf Config) Access(kong *pdk.PDK) {
-	if conf.ApmActive == false {
+	if !conf.ApmActive {
+		return
+	}
+	var err error
+	traceparent, _ := kong.Request.GetHeader(traceParent)
+	var traceId apm.TraceID
+	if traceparent != "" {
+		err = kong.ServiceRequest.SetHeader(oldTraceParent, traceparent)
+		if err != nil {
+			kong.Log.Err(fmt.Sprintf("Error setting %s header: ", oldTraceParent), err.Error())
+			return
+		}
+		bytes, err := hex.DecodeString(traceparent[3:35])
+		if err != nil {
+			kong.Log.Err("Error decoding trace id: ", err.Error())
+			return
+		}
+		copy(traceId[:], bytes)
+	} else {
+		_, err = cryptorand.Read(traceId[:])
+		if err != nil {
+			kong.Log.Err("Error generating new trace id: ", err.Error())
+			return
+		}
+	}
+	var spanId apm.SpanID
+	_, err = cryptorand.Read(spanId[:])
+	if err != nil {
+		kong.Log.Err("Error generating new span id: ", err.Error())
+		return
+	}
+	err = kong.ServiceRequest.SetHeader(traceParent, fmt.Sprintf("00-%s-%s-01", traceId, spanId))
+	if err != nil {
+		kong.Log.Err(fmt.Sprintf("Error setting %s header: ", traceParent), err.Error())
+		return
+	}
+}
+
+func (conf Config) Log(kong *pdk.PDK) {
+	if !conf.ApmActive {
 		return
 	}
 	// (eventually) initialize tracer
 	if tracer == nil {
 		initTracer(conf, kong.Log)
 	}
-	// check if there is an existing trace
-	requestHeaders := askMap(kong.Request.PdkBridge, "kong.request.get_headers", kong.Log)
-	opts := apm.TransactionOptions{}
-	if traceParentHeader, ok := requestHeaders[strings.ToLower(apmhttp.W3CTraceparentHeader)]; ok && len(traceParentHeader) > 0 {
-		kong.Log.Info("found trace parent: ", traceParentHeader[0])
-		traceContext, _ := apmhttp.ParseTraceparentHeader(traceParentHeader[0])
-		if traceStateHeader, ok := requestHeaders[strings.ToLower(apmhttp.TracestateHeader)]; ok && len(traceStateHeader) > 0 {
-			kong.Log.Info("found trace state: ", traceStateHeader)
-			traceContext.State, _ = apmhttp.ParseTracestateHeader(traceStateHeader...)
+	// get and parse log message
+	s, err := kong.Log.Serialize()
+	if err != nil {
+		kong.Log.Err("Error getting log message: ", err.Error())
+		return
+	}
+	var msg LogMsg
+	if err := json.Unmarshal([]byte(s), &msg); err != nil {
+		kong.Log.Err("Error unmarshalling log message: ", err.Error())
+		return
+	}
+	transactionOptions := apm.TransactionOptions{
+		Start: time.Unix(0, msg.StartedAt*int64(time.Millisecond)),
+	}
+	spanOptions := apm.SpanOptions{
+		Start: time.Unix(0, msg.StartedAt*int64(time.Millisecond)+int64(msg.Latencies.Kong*int(time.Millisecond)/2)),
+	}
+	// check if there is an existing trace parent
+	if traceParentHeader, ok := msg.Request.Headers[traceParent]; ok {
+		kong.Log.Debug("Found traceParent: ", traceParentHeader)
+		traceContext, err := apmhttp.ParseTraceparentHeader(traceParentHeader)
+		if err != nil {
+			kong.Log.Err("Error parsing traceParent: ", err.Error())
+			return
+		} else {
+			spanOptions.SpanID = traceContext.Span
+			if oldTraceParentHeader, ok := msg.Request.Headers[oldTraceParent]; ok {
+				kong.Log.Debug("Found oldTraceParent: ", oldTraceParentHeader)
+				transactionOptions.TraceContext, err = apmhttp.ParseTraceparentHeader(oldTraceParentHeader)
+				if err != nil {
+					kong.Log.Err("Error parsing oldTraceParent: ", err.Error())
+					return
+				}
+			} else {
+				transactionOptions.TraceContext.Trace = traceContext.Trace
+				transactionOptions.TraceContext.Span = apm.SpanID{}
+				transactionOptions.TraceContext.Options = apm.TraceOptions(0).WithRecorded(true)
+			}
 		}
-		opts.TraceContext = traceContext
-	}
-	// create and record transaction
-	txID := uuid.New().String()
-	method := askString(kong.Request.PdkBridge, "kong.request.get_method", kong.Log)
-	transactions[txID] = tracer.StartTransactionOptions(fmt.Sprintf("%s %s:%d%s",
-		method,
-		askString(kong.Request.PdkBridge, "kong.request.get_forwarded_host", kong.Log),
-		askInt(kong.Request.PdkBridge, "kong.request.get_forwarded_port", kong.Log),
-		askString(kong.Request.PdkBridge, "kong.request.get_forwarded_path", kong.Log),
-	), "request", opts)
-	kong.Log.Info("Started transaction: ", txID)
-	err := kong.Ctx.SetShared(transactionID, txID)
-	if err != nil {
-		kong.Log.Err("Error saving transactionID in shared context: ", err.Error())
+	} else {
+		kong.Log.Debug("No traceParent found, skipping message.")
 		return
 	}
+	// create transaction
+	transaction := tracer.StartTransactionOptions(fmt.Sprintf("%s %s",
+		msg.Request.Method,
+		msg.Request.URL,
+	), "request", transactionOptions)
+	transaction.Duration = time.Duration(msg.Latencies.Request) * time.Millisecond
+	defer transaction.End()
+	kong.Log.Debug(fmt.Sprintf("Started transaction: %+v", transaction.TraceContext()))
 	// only continue if this transaction is sampled
-	if !transactions[txID].Sampled() {
-		return
-	}
-	// enrich transaction
-	svc, err := kong.Router.GetService()
-	if err != nil {
-		kong.Log.Err("Error getting service from router: ", err.Error())
+	if !transaction.Sampled() {
+		kong.Log.Err("Transaction not sampled, skipping")
 		return
 	}
 	// create span
-	spans[txID] = transactions[txID].StartSpan(fmt.Sprintf("%s %s:%d%s",
-		method, // assume same as transaction
-		svc.Host,
-		svc.Port,
-		svc.Path,
-	), "external", nil)
-	kong.Log.Info("Started span: ", txID)
+	serviceURL := fmt.Sprintf("%s:%d%s",
+		msg.Service.Host,
+		msg.Service.Port,
+		msg.Service.Path,
+	)
+	span := transaction.StartSpanOptions(fmt.Sprintf("%s %s",
+		msg.Request.Method, // assume same as transaction
+		serviceURL,
+	), "external", spanOptions)
+	span.Duration = time.Duration(msg.Latencies.Request-msg.Latencies.Kong) * time.Millisecond
+	defer span.End()
+	kong.Log.Debug(fmt.Sprintf("Started span: %+v", span.TraceContext()))
+	// enrich transaction
+	// create a fake request to record info
+	fakeTransactionRequest, _ := http.NewRequest(msg.Request.Method, msg.Request.URL, nil)
+	fakeTransactionRequest.Header = translateHeaders(msg.Request.Headers)
+	u, err := url.Parse(msg.Request.URL)
+	if err == nil {
+		fakeTransactionRequest.Host = u.Host
+	}
+	fakeTransactionRequest.Method = msg.Request.Method
+	fakeTransactionRequest.RequestURI = msg.Request.URL
+	transaction.Context.SetHTTPRequest(fakeTransactionRequest)
+	transaction.Context.SetHTTPResponseHeaders(translateHeaders(msg.Request.Headers))
+	transaction.Result = strconv.Itoa(msg.Response.Status)
+	kong.Log.Debug(fmt.Sprintf("Finished with transaction: %+v", transaction.TraceContext()))
 	// enrich span
-	spans[txID].Action = method
-	spans[txID].Context.SetDestinationAddress(svc.Host, svc.Port)
-	spans[txID].Subtype = svc.Protocol
-	// add traceparent header to outgoing request
-	err = kong.ServiceRequest.AddHeader(apmhttp.W3CTraceparentHeader, apmhttp.FormatTraceparentHeader(spans[txID].TraceContext()))
-	if err != nil {
-		kong.Log.Err("Error setting traceparent header to service request: ", err.Error())
-	}
-}
-
-func (conf Config) Response(kong *pdk.PDK) {
-	if conf.ApmActive == false {
-		return
-	}
-	// retrieve transaction ID
-	txID, err := kong.Ctx.GetSharedString(transactionID)
-	if err != nil {
-		kong.Log.Err("Error getting transactionID from shared context: ", err.Error())
-		return
-	}
-	status := askInt(kong.ServiceResponse.PdkBridge, "kong.service.response.get_status", kong.Log)
-	// enrich and close span
-	if _, ok := spans[txID]; ok {
-		// get service
-		svc, err := kong.Router.GetService()
-		if err != nil {
-			kong.Log.Err("Error getting service from router: ", err.Error())
-			return
-		}
-		// create a fake request to enrich span
-		s := strings.SplitN(spans[txID].Name, " ", 2)
-		fakeRequest, _ := http.NewRequest(s[0], s[1], nil)
-		fakeRequest.Header = askMap(kong.ServiceResponse.PdkBridge, "kong.service.response.get_headers", kong.Log)
-		fakeRequest.Host = svc.Host
-		fakeRequest.Method = askString(kong.Request.PdkBridge, "kong.request.get_method", kong.Log)
-		fakeRequest.RequestURI = fmt.Sprintf("%s://%s:%d/%s",
-			svc.Protocol,
-			svc.Host,
-			svc.Port,
-			svc.Path,
-		)
-		spans[txID].Context.SetHTTPRequest(fakeRequest)
-		service := apm.DestinationServiceSpanContext{Resource: fmt.Sprintf("%s:%d",
-			svc.Host,
-			svc.Port,
-		)}
-		spans[txID].Context.SetDestinationService(service)
-		// If, when the transaction ends, its Outcome field has not
-		// been explicitly set, it will be set based on the status code:
-		// "success" if statusCode < 400, and "failure" otherwise.
-		spans[txID].Context.SetHTTPStatusCode(status)
-		kong.Log.Info("Ending span: ", txID)
-		spans[txID].End()
-		delete(spans, txID)
-	}
-	// enrich and close transaction
-	if _, ok := transactions[txID]; ok {
-		// create a fake request to enrich transaction
-		s := strings.SplitN(transactions[txID].Name, " ", 2)
-		fakeRequest, _ := http.NewRequest(s[0], s[1], nil)
-		fakeRequest.Header = askMap(kong.Request.PdkBridge, "kong.request.get_headers", kong.Log)
-		fakeRequest.Host = askString(kong.Request.PdkBridge, "kong.request.get_forwarded_host", kong.Log)
-		fakeRequest.Method = askString(kong.Request.PdkBridge, "kong.request.get_method", kong.Log)
-		fakeRequest.RequestURI = fmt.Sprintf("%s://%s:%d/%s",
-			askString(kong.Request.PdkBridge, "kong.request.get_scheme", kong.Log),
-			askString(kong.Request.PdkBridge, "kong.request.get_forwarded_host", kong.Log),
-			askInt(kong.Request.PdkBridge, "kong.request.get_forwarded_port", kong.Log),
-			askString(kong.Request.PdkBridge, "kong.request.get_forwarded_path", kong.Log),
-		)
-		transactions[txID].Context.SetHTTPRequest(fakeRequest)
-		transactions[txID].Context.SetHTTPResponseHeaders(askMap(kong.Response.PdkBridge, "kong.response.get_headers", kong.Log))
-		transactions[txID].Result = fmt.Sprintf("HTTP %d", status)
-		kong.Log.Info("Ending transaction: ", txID)
-		transactions[txID].End()
-		delete(transactions, txID)
-	}
+	span.Action = msg.Request.Method
+	span.Context.SetDestinationAddress(msg.Service.Host, msg.Service.Port)
+	span.Subtype = msg.Service.Protocol
+	// create a fake request to enrich span
+	fakeSpanRequest, _ := http.NewRequest(msg.Request.Method, serviceURL, nil)
+	fakeSpanRequest.Header = translateHeaders(msg.Response.Headers)
+	fakeSpanRequest.Host = msg.Service.Host
+	fakeSpanRequest.Method = msg.Request.Method
+	fakeSpanRequest.RequestURI = fmt.Sprintf("%s://%s",
+		msg.Service.Protocol,
+		serviceURL,
+	)
+	span.Context.SetHTTPRequest(fakeSpanRequest)
+	service := apm.DestinationServiceSpanContext{Resource: fmt.Sprintf("%s:%d",
+		msg.Service.Host,
+		msg.Service.Port,
+	)}
+	span.Context.SetDestinationService(service)
+	// If, when the transaction ends, its Outcome field has not
+	// been explicitly set, it will be set based on the status code:
+	// "success" if statusCode < 400, and "failure" otherwise.
+	span.Context.SetHTTPStatusCode(msg.Response.Status)
+	kong.Log.Debug(fmt.Sprintf("Finished with span: %+v", span.TraceContext()))
 }
 
 func main() {

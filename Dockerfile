@@ -8,10 +8,10 @@ RUN go mod download
 
 COPY *.go ./
 
-RUN CGO_ENABLED=0 go build -o /kong-elastic-apm
+RUN CGO_ENABLED=0 go build -o /elastic-apm
 
 FROM kong
 
 USER root
-COPY --from=build /kong-elastic-apm /usr/local/bin/
+COPY --from=build /elastic-apm /usr/local/bin/
 USER kong

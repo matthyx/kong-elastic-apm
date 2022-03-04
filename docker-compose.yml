@@ -10,8 +10,9 @@ services:
       - KONG_PROXY_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
-      - KONG_PLUGINSERVER_NAMES=kong-elastic-apm
-      - KONG_PLUGINSERVER_KONG_ELASTIC_APM_QUERY_CMD=/usr/local/bin/kong-elastic-apm -dump
+      - KONG_PLUGINS=bundled,elastic-apm
+      - KONG_PLUGINSERVER_NAMES=elastic-apm
+      - KONG_PLUGINSERVER_ELASTIC_APM_QUERY_CMD=/usr/local/bin/elastic-apm -dump
     ports:
       - "8000:8000"
       - "8443:8443"
