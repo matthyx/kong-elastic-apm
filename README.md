@@ -5,7 +5,7 @@
 
 This plugin instruments the Kong service request for feed the Elastic Application Performance Monitoring solution. This plugin written in Go, leverage the [Elastic APM Go agent](https://www.elastic.co/guide/en/apm/agent/go/current/index.html).
 
-To setup this plugin please follow the instructions of the APM Go agent, and refers to the environment variables setup, as there are mapped from the plugin configuration (to lower case).
+To set up this plugin please follow the instructions of the APM Go agent, and refers to the environment variables setup, as there are mapped from the plugin configuration (to lower case).
 
 
 **Kong** or **Kong API Gateway** is a cloud-native, platform-agnostic, scalable API Gateway distinguished for its high performance and extensibility via plugins.
@@ -15,7 +15,7 @@ By providing functionality for proxying, routing, load balancing, health checkin
 Kong runs natively on Kubernetes thanks to its official [Kubernetes Ingress Controller](https://github.com/Kong/kubernetes-ingress-controller).
 
 **Elastic Observability** Unified visibility across your entire ecosystem
-Bring your logs, metrics, and APM traces together at scale in a single stack so you can monitor and react to events happening anywhere in your environment. And it's free and open. [Elastic](https://www.elastic.co/observability)
+Bring your logs, metrics, and APM traces together at scale in a single stack, so you can monitor and react to events happening anywhere in your environment. And it's free and open. [Elastic](https://www.elastic.co/observability)
 
 ## License
 

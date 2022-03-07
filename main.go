@@ -69,18 +69,18 @@ func New() interface{} {
 func initTracer(conf Config, logger klog.Log) {
 	if !conf.ApmActive {
 		setEnv("ELASTIC_APM_ACTIVE", False, logger)
-		logger.Info("APM agent is not activated")
+		_ = logger.Info("APM agent is not activated")
 		return
 	}
 	setEnv("ELASTIC_APM_SERVER_URL", conf.ApmServerUrl, logger)
 	_, err := transport.InitDefault()
 	if err != nil {
-		logger.Err("Error reinitializing APM transport: ", err.Error())
+		_ = logger.Err("Error reinitializing APM transport: ", err.Error())
 		panic(err)
 	}
 	tracer, err = apm.NewTracer(conf.ApmServiceName, conf.ApmServiceVersion)
 	if err != nil {
-		logger.Err("Error creating APM tracer: ", err.Error())
+		_ = logger.Err("Error creating APM tracer: ", err.Error())
 		panic(err)
 	}
 	setEnv("ELASTIC_APM_SERVICE_NODE_NAME", conf.ApmServiceNodeName, logger)
@@ -120,10 +120,10 @@ func initTracer(conf Config, logger klog.Log) {
 
 func setEnv(env string, value string, logger klog.Log) {
 	if value != "" {
-		logger.Info("Setting ", env, " to ", value)
+		_ = logger.Info("Setting ", env, " to ", value)
 		err := os.Setenv(env, value)
 		if err != nil {
-			logger.Err("Error setting environment ", env, " : ", err.Error())
+			_ = logger.Err("Error setting environment ", env, " : ", err.Error())
 			panic(err)
 		}
 	}
@@ -211,31 +211,31 @@ func (conf Config) Access(kong *pdk.PDK) {
 	if traceparent != "" {
 		err = kong.ServiceRequest.SetHeader(oldTraceParent, traceparent)
 		if err != nil {
-			kong.Log.Err(fmt.Sprintf("Error setting %s header: ", oldTraceParent), err.Error())
+			_ = kong.Log.Err(fmt.Sprintf("Error setting %s header: ", oldTraceParent), err.Error())
 			return
 		}
 		bytes, err := hex.DecodeString(traceparent[3:35])
 		if err != nil {
-			kong.Log.Err("Error decoding trace id: ", err.Error())
+			_ = kong.Log.Err("Error decoding trace id: ", err.Error())
 			return
 		}
 		copy(traceId[:], bytes)
 	} else {
 		_, err = cryptorand.Read(traceId[:])
 		if err != nil {
-			kong.Log.Err("Error generating new trace id: ", err.Error())
+			_ = kong.Log.Err("Error generating new trace id: ", err.Error())
 			return
 		}
 	}
 	var spanId apm.SpanID
 	_, err = cryptorand.Read(spanId[:])
 	if err != nil {
-		kong.Log.Err("Error generating new span id: ", err.Error())
+		_ = kong.Log.Err("Error generating new span id: ", err.Error())
 		return
 	}
 	err = kong.ServiceRequest.SetHeader(traceParent, fmt.Sprintf("00-%s-%s-01", traceId, spanId))
 	if err != nil {
-		kong.Log.Err(fmt.Sprintf("Error setting %s header: ", traceParent), err.Error())
+		_ = kong.Log.Err(fmt.Sprintf("Error setting %s header: ", traceParent), err.Error())
 		return
 	}
 }
@@ -251,12 +251,12 @@ func (conf Config) Log(kong *pdk.PDK) {
 	// get and parse log message
 	s, err := kong.Log.Serialize()
 	if err != nil {
-		kong.Log.Err("Error getting log message: ", err.Error())
+		_ = kong.Log.Err("Error getting log message: ", err.Error())
 		return
 	}
 	var msg LogMsg
 	if err := json.Unmarshal([]byte(s), &msg); err != nil {
-		kong.Log.Err("Error unmarshalling log message: ", err.Error())
+		_ = kong.Log.Err("Error unmarshalling log message: ", err.Error())
 		return
 	}
 	transactionOptions := apm.TransactionOptions{
@@ -267,18 +267,18 @@ func (conf Config) Log(kong *pdk.PDK) {
 	}
 	// check if there is an existing trace parent
 	if traceParentHeader, ok := msg.Request.Headers[traceParent]; ok {
-		kong.Log.Debug("Found traceParent: ", traceParentHeader)
+		_ = kong.Log.Debug("Found traceParent: ", traceParentHeader)
 		traceContext, err := apmhttp.ParseTraceparentHeader(traceParentHeader)
 		if err != nil {
-			kong.Log.Err("Error parsing traceParent: ", err.Error())
+			_ = kong.Log.Err("Error parsing traceParent: ", err.Error())
 			return
 		} else {
 			spanOptions.SpanID = traceContext.Span
 			if oldTraceParentHeader, ok := msg.Request.Headers[oldTraceParent]; ok {
-				kong.Log.Debug("Found oldTraceParent: ", oldTraceParentHeader)
+				_ = kong.Log.Debug("Found oldTraceParent: ", oldTraceParentHeader)
 				transactionOptions.TraceContext, err = apmhttp.ParseTraceparentHeader(oldTraceParentHeader)
 				if err != nil {
-					kong.Log.Err("Error parsing oldTraceParent: ", err.Error())
+					_ = kong.Log.Err("Error parsing oldTraceParent: ", err.Error())
 					return
 				}
 			} else {
@@ -288,7 +288,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 			}
 		}
 	} else {
-		kong.Log.Debug("No traceParent found, skipping message.")
+		_ = kong.Log.Debug("No traceParent found, skipping message.")
 		return
 	}
 	// create transaction
@@ -298,10 +298,10 @@ func (conf Config) Log(kong *pdk.PDK) {
 	), "request", transactionOptions)
 	transaction.Duration = time.Duration(msg.Latencies.Request) * time.Millisecond
 	defer transaction.End()
-	kong.Log.Debug(fmt.Sprintf("Started transaction: %+v", transaction.TraceContext()))
+	_ = kong.Log.Debug(fmt.Sprintf("Started transaction: %+v", transaction.TraceContext()))
 	// only continue if this transaction is sampled
 	if !transaction.Sampled() {
-		kong.Log.Err("Transaction not sampled, skipping")
+		_ = kong.Log.Err("Transaction not sampled, skipping")
 		return
 	}
 	// create span
@@ -316,7 +316,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 	), "external", spanOptions)
 	span.Duration = time.Duration(msg.Latencies.Request-msg.Latencies.Kong) * time.Millisecond
 	defer span.End()
-	kong.Log.Debug(fmt.Sprintf("Started span: %+v", span.TraceContext()))
+	_ = kong.Log.Debug(fmt.Sprintf("Started span: %+v", span.TraceContext()))
 	// enrich transaction
 	// create a fake request to record info
 	fakeTransactionRequest, _ := http.NewRequest(msg.Request.Method, msg.Request.URL, nil)
@@ -330,7 +330,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 	transaction.Context.SetHTTPRequest(fakeTransactionRequest)
 	transaction.Context.SetHTTPResponseHeaders(translateHeaders(msg.Request.Headers))
 	transaction.Result = strconv.Itoa(msg.Response.Status)
-	kong.Log.Debug(fmt.Sprintf("Finished with transaction: %+v", transaction.TraceContext()))
+	_ = kong.Log.Debug(fmt.Sprintf("Finished with transaction: %+v", transaction.TraceContext()))
 	// enrich span
 	span.Action = msg.Request.Method
 	span.Context.SetDestinationAddress(msg.Service.Host, msg.Service.Port)
@@ -354,7 +354,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 	// been explicitly set, it will be set based on the status code:
 	// "success" if statusCode < 400, and "failure" otherwise.
 	span.Context.SetHTTPStatusCode(msg.Response.Status)
-	kong.Log.Debug(fmt.Sprintf("Finished with span: %+v", span.TraceContext()))
+	_ = kong.Log.Debug(fmt.Sprintf("Finished with span: %+v", span.TraceContext()))
 }
 
 func main() {
