@@ -3,7 +3,7 @@
 
 ![Stars](https://img.shields.io/github/stars/matthyx/kong-elastic-apm?style=flat-square) ![Version](https://img.shields.io/github/v/release/Kong/kong?color=green&label=Version&style=flat-square)  ![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)
 
-This plugin instruments the Kong service request for feed the Elastic Application Performance Monitoring solution. This plugin written in Go, leverage the [Elastic APM Go agent](https://www.elastic.co/guide/en/apm/agent/go/current/index.html).
+This plugin enable the open telemetry feature on the Kong gateway to feed the Elastic Application Performance Monitoring solution. This plugin written in Go, leverage the [Elastic APM Go agent](https://www.elastic.co/guide/en/apm/agent/go/current/index.html).
 
 To setup this plugin please follow the instructions of the APM Go agent, and refers to the environment variables setup, as there are mapped from the plugin configuration (to lower case).
 
