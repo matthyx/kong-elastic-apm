@@ -8,9 +8,9 @@ import (
 	"github.com/Kong/go-pdk"
 	klog "github.com/Kong/go-pdk/log"
 	"github.com/Kong/go-pdk/server"
-	"go.elastic.co/apm"
-	"go.elastic.co/apm/module/apmhttp"
-	"go.elastic.co/apm/transport"
+	"go.elastic.co/apm/module/apmhttp/v2"
+	"go.elastic.co/apm/v2"
+	"go.elastic.co/apm/v2/transport"
 	"log"
 	"net/http"
 	"net/url"
@@ -73,7 +73,7 @@ func initTracer(conf Config, logger klog.Log) {
 		return
 	}
 	setEnv("ELASTIC_APM_SERVER_URL", conf.ApmServerUrl, logger)
-	_, err := transport.InitDefault()
+	_, err := transport.NewHTTPTransport(transport.HTTPTransportOptions{})
 	if err != nil {
 		_ = logger.Err("Error reinitializing APM transport: ", err.Error())
 		panic(err)
