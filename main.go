@@ -152,11 +152,11 @@ type LogMsg struct {
 	Request struct {
 		Querystring struct {
 		} `json:"querystring"`
-		Size    int               `json:"size"`
-		URI     string            `json:"uri"`
-		URL     string            `json:"url"`
-		Headers map[string]string `json:"headers"`
-		Method  string            `json:"method"`
+		Size    int                    `json:"size"`
+		URI     string                 `json:"uri"`
+		URL     string                 `json:"url"`
+		Headers map[string]interface{} `json:"headers"`
+		Method  string                 `json:"method"`
 	} `json:"request"`
 	Tries []struct {
 		BalancerLatency int    `json:"balancer_latency"`
@@ -168,9 +168,9 @@ type LogMsg struct {
 	Workspace   string `json:"workspace"`
 	UpstreamURI string `json:"upstream_uri"`
 	Response    struct {
-		Headers map[string]string `json:"headers"`
-		Status  int               `json:"status"`
-		Size    int               `json:"size"`
+		Headers map[string]interface{} `json:"headers"`
+		Status  int                    `json:"status"`
+		Size    int                    `json:"size"`
 	} `json:"response"`
 	Route struct {
 		ID                      string   `json:"id"`
@@ -193,10 +193,21 @@ type LogMsg struct {
 	StartedAt int64 `json:"started_at"`
 }
 
-func translateHeaders(in map[string]string) map[string][]string {
+func toString(i interface{}) string {
+	return fmt.Sprintf("%v", i)
+}
+
+func translateHeaders(in map[string]interface{}) map[string][]string {
 	out := make(map[string][]string)
 	for k, v := range in {
-		out[k] = []string{v}
+		switch x := v.(type) {
+		case []interface{}:
+			for _, s := range x {
+				out[k] = append(out[k], toString(s))
+			}
+		default:
+			out[k] = []string{toString(v)}
+		}
 	}
 	return out
 }
@@ -268,7 +279,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 	// check if there is an existing trace parent
 	if traceParentHeader, ok := msg.Request.Headers[traceParent]; ok {
 		_ = kong.Log.Debug("Found traceParent: ", traceParentHeader)
-		traceContext, err := apmhttp.ParseTraceparentHeader(traceParentHeader)
+		traceContext, err := apmhttp.ParseTraceparentHeader(toString(traceParentHeader))
 		if err != nil {
 			_ = kong.Log.Err("Error parsing traceParent: ", err.Error())
 			return
@@ -276,7 +287,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 			spanOptions.SpanID = traceContext.Span
 			if oldTraceParentHeader, ok := msg.Request.Headers[oldTraceParent]; ok {
 				_ = kong.Log.Debug("Found oldTraceParent: ", oldTraceParentHeader)
-				transactionOptions.TraceContext, err = apmhttp.ParseTraceparentHeader(oldTraceParentHeader)
+				transactionOptions.TraceContext, err = apmhttp.ParseTraceparentHeader(toString(oldTraceParentHeader))
 				if err != nil {
 					_ = kong.Log.Err("Error parsing oldTraceParent: ", err.Error())
 					return
