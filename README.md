@@ -1,7 +1,7 @@
 # Kong Elastic APM Plugin
 
 
-![Stars](https://img.shields.io/github/stars/matthyx/kong-elastic-apm?style=flat-square) ![Version](https://img.shields.io/github/v/release/Kong/kong?color=green&label=Version&style=flat-square)  ![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6092/badge)](https://bestpractices.coreinfrastructure.org/projects/6092) ![Stars](https://img.shields.io/github/stars/matthyx/kong-elastic-apm?style=flat-square) ![Version](https://img.shields.io/github/v/release/Kong/kong?color=green&label=Version&style=flat-square)  ![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)
 
 This plugin enable the open telemetry feature on the Kong gateway to feed the Elastic Application Performance Monitoring solution. This plugin written in Go, leverage the [Elastic APM Go agent](https://www.elastic.co/guide/en/apm/agent/go/current/index.html).
 
