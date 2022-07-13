@@ -30,36 +30,43 @@ var Priority = 1
 var False = "false"
 
 type Config struct {
-	ApmActive                 bool   `json:"apm_active"`
-	ApmApiKey                 string `json:"apm_api_key"`
-	ApmApiRequestSize         string `json:"apm_api_request_size"`
-	ApmApiRequestTime         string `json:"apm_api_request_time"`
-	ApmBreakDownMetrics       bool   `json:"apm_api_breakdown_metrics"`
-	ApmCaptureBody            string `json:"apm_api_capture_body"`
-	ApmCaptureHeaders         bool   `json:"apm_api_capture_headers"`
-	ApmCentralConfig          bool   `json:"apm_api_central_config"`
-	ApmCloudProvider          string `json:"apm_api_cloud_provider"`
-	ApmDisableMetrics         string `json:"apm_disable_metrics"`
-	ApmEnvironment            string `json:"apm_environment"`
-	ApmGlobalLabels           string `json:"apm_global_labels"`
-	ApmLogFile                string `json:"apm_log_file"`
-	ApmLogLevel               string `json:"apm_log_level"`
-	ApmMetricsInterval        string `json:"apm_metrics_interval"`
-	ApmRecording              bool   `json:"apm_recording"`
-	ApmSanitizeFieldsNames    string `json:"apm_sanitize_fields_names"`
-	ApmSecretToken            string `json:"apm_secret_token"`
-	ApmServerTimeout          string `json:"apm_server_timeout"`
-	ApmServerUrl              string `json:"apm_server_url"`
-	ApmServerCert             string `json:"apm_server_cert"`
-	ApmServerVerifyServerCert bool   `json:"apm_server_verify_server_cert"`
-	ApmServiceName            string `json:"apm_service_name"`
-	ApmServiceVersion         string `json:"apm_service_version"`
-	ApmServiceNodeName        string `json:"apm_service_node_name"`
-	ApmTransactionIgnoreUrls  string `json:"apm_transaction_ignore_urls"`
-	ApmTransactionMaxSpans    int    `json:"apm_transaction_max_spans"`
-	ApmTransactionSampleRate  string `json:"apm_transaction_sample_rate"`
-	ApmSpanFramesMinDuration  string `json:"apm_span_frames_min_duration"`
-	ApmStackTraceLimit        int    `json:"apm_span_stack_trace_limit"`
+	ApmActive                 *bool   `json:"apm_active"`
+	ApmApiKey                 *string `json:"apm_api_key"`
+	ApmApiRequestSize         *string `json:"apm_api_request_size"`
+	ApmApiRequestTime         *string `json:"apm_api_request_time"`
+	ApmBreakDownMetrics       *bool   `json:"apm_api_breakdown_metrics"`
+	ApmCaptureBody            *string `json:"apm_api_capture_body"`
+	ApmCaptureHeaders         *bool   `json:"apm_api_capture_headers"`
+	ApmCentralConfig          *bool   `json:"apm_api_central_config"`
+	ApmCloudProvider          *string `json:"apm_api_cloud_provider"`
+	ApmDisableMetrics         *string `json:"apm_disable_metrics"`
+	ApmEnvironment            *string `json:"apm_environment"`
+	ApmGlobalLabels           *string `json:"apm_global_labels"`
+	ApmLogFile                *string `json:"apm_log_file"`
+	ApmLogLevel               *string `json:"apm_log_level"`
+	ApmMetricsInterval        *string `json:"apm_metrics_interval"`
+	ApmRecording              *bool   `json:"apm_recording"`
+	ApmSanitizeFieldsNames    *string `json:"apm_sanitize_fields_names"`
+	ApmSecretToken            *string `json:"apm_secret_token"`
+	ApmServerTimeout          *string `json:"apm_server_timeout"`
+	ApmServerUrl              *string `json:"apm_server_url"`
+	ApmServerCert             *string `json:"apm_server_cert"`
+	ApmServerVerifyServerCert *bool   `json:"apm_server_verify_server_cert"`
+	ApmServiceName            string  `json:"apm_service_name"`
+	ApmServiceVersion         string  `json:"apm_service_version"`
+	ApmServiceNodeName        *string `json:"apm_service_node_name"`
+	ApmTransactionIgnoreUrls  *string `json:"apm_transaction_ignore_urls"`
+	ApmTransactionMaxSpans    *int    `json:"apm_transaction_max_spans"`
+	ApmTransactionSampleRate  *string `json:"apm_transaction_sample_rate"`
+	ApmSpanFramesMinDuration  *string `json:"apm_span_frames_min_duration"`
+	ApmStackTraceLimit        *int    `json:"apm_span_stack_trace_limit"`
+}
+
+func (conf Config) Active() bool {
+	if conf.ApmActive != nil {
+		return *conf.ApmActive
+	}
+	return false
 }
 
 func New() interface{} {
@@ -67,12 +74,35 @@ func New() interface{} {
 }
 
 func initTracer(conf Config, logger klog.Log) {
-	if !conf.ApmActive {
+	if !conf.Active() {
 		setEnv("ELASTIC_APM_ACTIVE", False, logger)
 		_ = logger.Info("APM agent is not activated")
 		return
 	}
-	setEnv("ELASTIC_APM_SERVER_URL", conf.ApmServerUrl, logger)
+	setEnvString("ELASTIC_APM_SERVER_URL", conf.ApmServerUrl, logger)
+	setEnvString("ELASTIC_APM_SERVICE_NODE_NAME", conf.ApmServiceNodeName, logger)
+	setEnvString("ELASTIC_APM_ENVIRONMENT", conf.ApmEnvironment, logger)
+	setEnvBool("ELASTIC_APM_RECORDING", conf.ApmRecording, logger)
+	setEnvString("ELASTIC_APM_GLOBAL_LABELS", conf.ApmGlobalLabels, logger)
+	setEnvString("ELASTIC_APM_TRANSACTION_IGNORE_URLS", conf.ApmTransactionIgnoreUrls, logger)
+	setEnvString("ELASTIC_APM_SANITIZE_FIELD_NAMES", conf.ApmSanitizeFieldsNames, logger)
+	setEnvBool("ELASTIC_APM_CAPTURE_HEADERS", conf.ApmCaptureHeaders, logger)
+	setEnvString("ELASTIC_APM_CAPTURE_BODY", conf.ApmCaptureBody, logger)
+	setEnvString("ELASTIC_APM_API_REQUEST_TIME", conf.ApmApiRequestTime, logger)
+	setEnvString("ELASTIC_APM_API_REQUEST_SIZE", conf.ApmApiRequestSize, logger)
+	setEnvInt("ELASTIC_APM_TRANSACTION_MAX_SPANS", conf.ApmTransactionMaxSpans, logger)
+	setEnvString("ELASTIC_APM_SPAN_FRAMES_MIN_DURATION", conf.ApmSpanFramesMinDuration, logger)
+	setEnvInt("ELASTIC_APM_STACK_TRACE_LIMIT", conf.ApmStackTraceLimit, logger)
+	setEnvString("ELASTIC_APM_TRANSACTION_SAMPLE_RATE", conf.ApmTransactionSampleRate, logger)
+	setEnvString("ELASTIC_APM_METRICS_INTERVAL", conf.ApmMetricsInterval, logger)
+	setEnvString("ELASTIC_APM_DISABLE_METRICS", conf.ApmDisableMetrics, logger)
+	setEnvBool("ELASTIC_APM_BREAKDOWN_METRICS", conf.ApmBreakDownMetrics, logger)
+	setEnvString("ELASTIC_APM_SERVER_CERT", conf.ApmServerCert, logger)
+	setEnvBool("ELASTIC_APM_VERIFY_SERVER_CERT", conf.ApmServerVerifyServerCert, logger)
+	setEnvString("ELASTIC_APM_LOG_FILE", conf.ApmLogFile, logger)
+	setEnvString("ELASTIC_APM_LOG_LEVEL", conf.ApmLogLevel, logger)
+	setEnvBool("ELASTIC_APM_CENTRAL_CONFIG", conf.ApmCentralConfig, logger)
+	setEnvString("ELASTIC_APM_CLOUD_PROVIDER", conf.ApmCloudProvider, logger)
 	_, err := transport.NewHTTPTransport(transport.HTTPTransportOptions{})
 	if err != nil {
 		_ = logger.Err("Error reinitializing APM transport: ", err.Error())
@@ -83,49 +113,32 @@ func initTracer(conf Config, logger klog.Log) {
 		_ = logger.Err("Error creating APM tracer: ", err.Error())
 		panic(err)
 	}
-	setEnv("ELASTIC_APM_SERVICE_NODE_NAME", conf.ApmServiceNodeName, logger)
-	setEnv("ELASTIC_APM_ENVIRONMENT", conf.ApmEnvironment, logger)
-	if conf.ApmRecording == false {
-		setEnv("ELASTIC_APM_RECORDING", False, logger)
+}
+
+func setEnvBool(env string, value *bool, logger klog.Log) {
+	if value != nil {
+		setEnv(env, strconv.FormatBool(*value), logger)
 	}
-	setEnv("ELASTIC_APM_GLOBAL_LABELS", conf.ApmGlobalLabels, logger)
-	setEnv("ELASTIC_APM_TRANSACTION_IGNORE_URLS", conf.ApmTransactionIgnoreUrls, logger)
-	setEnv("ELASTIC_APM_SANITIZE_FIELD_NAMES", conf.ApmSanitizeFieldsNames, logger)
-	if conf.ApmCaptureHeaders == false {
-		setEnv("ELASTIC_APM_CAPTURE_HEADERS", False, logger)
+}
+
+func setEnvInt(env string, value *int, logger klog.Log) {
+	if value != nil {
+		setEnv(env, strconv.Itoa(*value), logger)
 	}
-	setEnv("ELASTIC_APM_CAPTURE_BODY", conf.ApmCaptureBody, logger)
-	setEnv("ELASTIC_APM_API_REQUEST_TIME", conf.ApmApiRequestTime, logger)
-	setEnv("ELASTIC_APM_API_REQUEST_SIZE", conf.ApmApiRequestSize, logger)
-	setEnv("ELASTIC_APM_TRANSACTION_MAX_SPANS", strconv.Itoa(conf.ApmTransactionMaxSpans), logger)
-	setEnv("ELASTIC_APM_SPAN_FRAMES_MIN_DURATION", conf.ApmSpanFramesMinDuration, logger)
-	setEnv("ELASTIC_APM_STACK_TRACE_LIMIT", strconv.Itoa(conf.ApmStackTraceLimit), logger)
-	setEnv("ELASTIC_APM_TRANSACTION_SAMPLE_RATE", conf.ApmTransactionSampleRate, logger)
-	setEnv("ELASTIC_APM_METRICS_INTERVAL", conf.ApmMetricsInterval, logger)
-	setEnv("ELASTIC_APM_DISABLE_METRICS", conf.ApmDisableMetrics, logger)
-	if conf.ApmBreakDownMetrics == false {
-		setEnv("ELASTIC_APM_BREAKDOWN_METRICS", False, logger)
+}
+
+func setEnvString(env string, value *string, logger klog.Log) {
+	if value != nil {
+		setEnv(env, *value, logger)
 	}
-	setEnv("ELASTIC_APM_SERVER_CERT", conf.ApmServerCert, logger)
-	if conf.ApmServerVerifyServerCert == false {
-		setEnv("ELASTIC_APM_VERIFY_SERVER_CERT", "false", logger)
-	}
-	setEnv("ELASTIC_APM_LOG_FILE", conf.ApmLogFile, logger)
-	setEnv("ELASTIC_APM_LOG_LEVEL", conf.ApmLogLevel, logger)
-	if conf.ApmCentralConfig == false {
-		setEnv("ELASTIC_APM_CENTRAL_CONFIG", "false", logger)
-	}
-	setEnv("ELASTIC_APM_CLOUD_PROVIDER", conf.ApmCloudProvider, logger)
 }
 
 func setEnv(env string, value string, logger klog.Log) {
-	if value != "" {
-		_ = logger.Info("Setting ", env, " to ", value)
-		err := os.Setenv(env, value)
-		if err != nil {
-			_ = logger.Err("Error setting environment ", env, " : ", err.Error())
-			panic(err)
-		}
+	_ = logger.Info("Setting ", env, " to ", value)
+	err := os.Setenv(env, value)
+	if err != nil {
+		_ = logger.Err("Error setting environment ", env, " : ", err.Error())
+		panic(err)
 	}
 }
 
@@ -213,7 +226,7 @@ func translateHeaders(in map[string]interface{}) map[string][]string {
 }
 
 func (conf Config) Access(kong *pdk.PDK) {
-	if !conf.ApmActive {
+	if !conf.Active() {
 		return
 	}
 	var err error
@@ -252,7 +265,7 @@ func (conf Config) Access(kong *pdk.PDK) {
 }
 
 func (conf Config) Log(kong *pdk.PDK) {
-	if !conf.ApmActive {
+	if !conf.Active() {
 		return
 	}
 	// (eventually) initialize tracer
