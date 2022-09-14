@@ -103,6 +103,8 @@ func initTracer(conf Config, logger klog.Log) {
 	setEnvString("ELASTIC_APM_LOG_LEVEL", conf.ApmLogLevel, logger)
 	setEnvBool("ELASTIC_APM_CENTRAL_CONFIG", conf.ApmCentralConfig, logger)
 	setEnvString("ELASTIC_APM_CLOUD_PROVIDER", conf.ApmCloudProvider, logger)
+	setEnvString("ELASTIC_APM_SERVICE_NAME", &conf.ApmServiceName, logger)
+	setEnvString("ELASTIC_APM_SECRET_TOKEN", conf.ApmSecretToken, logger)
 	_, err := transport.NewHTTPTransport(transport.HTTPTransportOptions{})
 	if err != nil {
 		_ = logger.Err("Error reinitializing APM transport: ", err.Error())
