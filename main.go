@@ -16,12 +16,14 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const (
 	traceParent    = "traceparent"
 	oldTraceParent = "x-external-traceparent"
+	traceInfo      = "trace-id"
 )
 
 var tracer *apm.Tracer
@@ -259,9 +261,12 @@ func (conf Config) Access(kong *pdk.PDK) {
 		_ = kong.Log.Err("Error generating new span id: ", err.Error())
 		return
 	}
-	err = kong.ServiceRequest.SetHeader(traceParent, fmt.Sprintf("00-%s-%s-01", traceId, spanId))
+	customHeaders := make(map[string][]string)
+	customHeaders[traceParent] = strings.Fields(fmt.Sprintf("00-%s-%s-01", traceId, spanId))
+	customHeaders[traceInfo] = strings.Fields(string(traceId[:]))
+	err = kong.ServiceRequest.SetHeaders(customHeaders)
 	if err != nil {
-		_ = kong.Log.Err(fmt.Sprintf("Error setting %s header: ", traceParent), err.Error())
+		_ = kong.Log.Err(fmt.Sprintf("Error setting %s and %s header: ", traceParent, traceInfo), err.Error())
 		return
 	}
 }
