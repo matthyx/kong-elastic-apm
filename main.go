@@ -270,10 +270,8 @@ func (conf Config) Log(kong *pdk.PDK) {
 	if !conf.Active() {
 		return
 	}
-	// (eventually) initialize tracer
-	//if tracer == nil {
-		initTracer(conf, kong.Log)
-	//}
+	// initialize tracer
+	initTracer(conf, kong.Log)
 	// get and parse log message
 	s, err := kong.Log.Serialize()
 	if err != nil {
