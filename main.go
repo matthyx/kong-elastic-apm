@@ -232,7 +232,10 @@ func (conf Config) Access(kong *pdk.PDK) {
 		return
 	}
 	var err error
-	traceparent, _ := kong.Request.GetHeader(traceParent)
+	traceparent, err := kong.Request.GetHeader(traceParent)
+	if err != nil {
+		_ = kong.Log.Err("Error reading traceparent from headers: ", err.Error())
+	}
 	var traceId apm.TraceID
 	if traceparent != "" {
 		err = kong.ServiceRequest.SetHeader(oldTraceParent, traceparent)
@@ -329,7 +332,7 @@ func (conf Config) Log(kong *pdk.PDK) {
 		return
 	}
 	// create span
-	serviceURL := fmt.Sprintf("%s:%d%s",
+	serviceURL := fmt.Sprintf("//%s:%d%s",
 		msg.Service.Host,
 		msg.Service.Port,
 		msg.Service.Path,
@@ -343,7 +346,10 @@ func (conf Config) Log(kong *pdk.PDK) {
 	_ = kong.Log.Debug(fmt.Sprintf("Started span: %+v", span.TraceContext()))
 	// enrich transaction
 	// create a fake request to record info
-	fakeTransactionRequest, _ := http.NewRequest(msg.Request.Method, msg.Request.URL, nil)
+	fakeTransactionRequest, err := http.NewRequest(msg.Request.Method, msg.Request.URL, nil)
+	if err != nil {
+		_ = kong.Log.Err("Error creating fakeTransactionRequest: ", err.Error())
+	}
 	fakeTransactionRequest.Header = translateHeaders(msg.Request.Headers)
 	u, err := url.Parse(msg.Request.URL)
 	if err == nil {
@@ -360,7 +366,10 @@ func (conf Config) Log(kong *pdk.PDK) {
 	span.Context.SetDestinationAddress(msg.Service.Host, msg.Service.Port)
 	span.Subtype = msg.Service.Protocol
 	// create a fake request to enrich span
-	fakeSpanRequest, _ := http.NewRequest(msg.Request.Method, serviceURL, nil)
+	fakeSpanRequest, err := http.NewRequest(msg.Request.Method, serviceURL, nil)
+	if err != nil {
+		_ = kong.Log.Err("Error creating fakeSpanRequest: ", err.Error())
+	}
 	fakeSpanRequest.Header = translateHeaders(msg.Response.Headers)
 	fakeSpanRequest.Host = msg.Service.Host
 	fakeSpanRequest.Method = msg.Request.Method
