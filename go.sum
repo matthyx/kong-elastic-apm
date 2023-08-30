@@ -74,9 +74,8 @@ github.com/ugorji/go v1.2.1/go.mod h1:cSVypSfTLm2o9fKxXvQgn3rMmkPXovcWor6Qn5tbFm
 github.com/ugorji/go/codec v1.2.1 h1:/TRfW3XKkvWvmAYyCUaQlhoCDGjcvNR8xVVA/l5p/jQ=
 github.com/ugorji/go/codec v1.2.1/go.mod h1:s/WxCRi46t8rA+fowL40EnmD7ec0XhR7ZypxeBNdzsM=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.elastic.co/apm/module/apmhttp/v2 v2.4.3 h1:bBqbbtQSEL+uVpH5CS656E9x6pXha8kkZ468/G0T5Eo=
-go.elastic.co/apm/module/apmhttp/v2 v2.4.3/go.mod h1:PsafA29/iwRva1ouV+70Lfu6RyAJHh6Zcc+jL6eZ83E=
-go.elastic.co/apm/v2 v2.4.3/go.mod h1:+CiBUdrrAGnGCL9TNx7tQz3BrfYV23L8Ljvotoc87so=
+go.elastic.co/apm/module/apmhttp/v2 v2.4.4 h1:BcJDLFztZByHiJRXXvAHY7bue9+vhzMLn2OBK5N8HDw=
+go.elastic.co/apm/module/apmhttp/v2 v2.4.4/go.mod h1:694qsHWRPVkfYqQ224ZSeRx9Dt2FS/xF1igNBGkHi6o=
 go.elastic.co/apm/v2 v2.4.4 h1:KGbmUEtLNQ6sCFGpqTMhfRjqDOKP8IliO+efErKY5lU=
 go.elastic.co/apm/v2 v2.4.4/go.mod h1:+CiBUdrrAGnGCL9TNx7tQz3BrfYV23L8Ljvotoc87so=
 go.elastic.co/fastjson v1.1.0 h1:3MrGBWWVIxe/xvsbpghtkFoPciPhOCmjsR/HfwEeQR4=
