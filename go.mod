@@ -3,7 +3,7 @@ module github.com/Kong/go-plugins
 go 1.23.0
 
 require (
-	github.com/Kong/go-pdk v0.11.1
+	github.com/Kong/go-pdk v0.11.2
 	go.elastic.co/apm/module/apmhttp/v2 v2.7.0
 	go.elastic.co/apm/v2 v2.7.1
 )
