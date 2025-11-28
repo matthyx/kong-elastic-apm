@@ -35,8 +35,8 @@ github.com/ugorji/go/codec v1.2.14 h1:yOQvXCBc3Ij46LRkRoh4Yd5qK6LVOgi0bYOXfb7ifj
 github.com/ugorji/go/codec v1.2.14/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 go.elastic.co/apm/module/apmhttp/v2 v2.7.0 h1:qSZ5aVT1K+OwFy3JmylgJntgAhVl4GmHPzUsA2JgV4g=
 go.elastic.co/apm/module/apmhttp/v2 v2.7.0/go.mod h1:cdBNYMOe0uXcyS/IqhXfKt8isl1DX1nM3nFJm+beY4w=
-go.elastic.co/apm/v2 v2.7.1 h1:OFjARuESjBsxw7wHrEAnfSVNCHGBATXSI/kPvBARY/A=
-go.elastic.co/apm/v2 v2.7.1/go.mod h1:tQhBAjwh93b2leuAdzGwta/sP7Yc7QoKTSjeIHHDuog=
+go.elastic.co/apm/v2 v2.7.2 h1:0blxpxOMOcpBTz034RBqvEw806y0CDJwo/ut+2wZsHA=
+go.elastic.co/apm/v2 v2.7.2/go.mod h1:KJcwwsaouDzcLd8EviAO+y8yrfZzD6PhUCEg82bvLV4=
 go.elastic.co/fastjson v1.5.1 h1:zeh1xHrFH79aQ6Xsw7YxixvnOdAl3OSv0xch/jRDzko=
 go.elastic.co/fastjson v1.5.1/go.mod h1:WtvH5wz8z9pDOPqNYSYKoLLv/9zCWZLeejHWuvdL/EM=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
