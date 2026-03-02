@@ -1,4 +1,4 @@
-FROM golang:1.25.7 as build
+FROM golang:1.26.0 as build
 
 WORKDIR /app
 
