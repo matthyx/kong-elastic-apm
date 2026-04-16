@@ -1,11 +1,11 @@
 module github.com/Kong/go-plugins
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/Kong/go-pdk v0.11.2
 	go.elastic.co/apm/module/apmhttp/v2 v2.7.6
-	go.elastic.co/apm/v2 v2.7.6
+	go.elastic.co/apm/v2 v2.7.7
 )
 
 require (
